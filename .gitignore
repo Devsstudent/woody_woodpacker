@@ -1,4 +1,4 @@
 .vscode
-*.dYSM
+*.dSYM
 *.swp
 .DS_Store
