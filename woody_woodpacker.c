@@ -10,6 +10,7 @@ bool is_elf(int stream_input)
         perror("read");
         return false;
     }
+    lseek(stream_input, 0, SEEK_SET);
     return magic[0] == 0x7f && magic[1] == 'E' && magic[2] == 'L' && magic[3] == 'F';
 }
 
