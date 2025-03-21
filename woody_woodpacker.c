@@ -14,6 +14,28 @@ bool is_elf(int stream_input)
     return magic[0] == 0x7f && magic[1] == 'E' && magic[2] == 'L' && magic[3] == 'F';
 }
 
+bool    write_woody(int stream_output) {
+    // ARM Linux shellcode to write "Woody" to stdout
+    uint8_t shellcode[] = {
+        0x01, 0x00, 0xa0, 0xe3,  // mov r0, #1 (stdout fd)
+        0x18, 0x10, 0x8f, 0xe2,  // add r1, pc, #24 (address of "Woody")
+        0x05, 0x20, 0xa0, 0xe3,  // mov r2, #5 (length)
+        0x04, 0x70, 0xa0, 0xe3,  // mov r7, #4 (write syscall)
+        0x00, 0x00, 0x00, 0xef,  // svc 0 (syscall)
+        0x00, 0x00, 0xa0, 0xe3,  // mov r0, #0 (exit code)
+        0x01, 0x70, 0xa0, 0xe3,  // mov r7, #1 (exit syscall)
+        0x00, 0x00, 0x00, 0xef,  // svc 0 (syscall)
+        0x57, 0x6f, 0x6f, 0x64, 0x79  // "Woody" in ASCII
+    };
+
+    // Write shellcode to file
+    int res = write(stream_output, shellcode, sizeof(shellcode));
+    if (res <= 0) {
+        return false;
+    }
+    return true;
+}
+
 bool copy_data(int stream_input, int stream_output)
 {
     char buffer[4096];
@@ -69,5 +91,14 @@ int main(int ac, char **av)
         return 1;
     }
     close(stream_input);
+    write_woody(stream_output);
+
+    // function qui compte le nombre d'octet du fichier -> pour remplacer la valeur dans le header
+    // function qui remplace la valeur dans le header
+    // modifier le entrypoint pour pointer sur le segment qu'on ajoute
+    // ajouter le segment a la fin
+    // inserer un nouveau programme header
+    // modifier le nomber de programme header
+    close(stream_output);
     return 0;
 }

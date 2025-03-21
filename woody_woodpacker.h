@@ -5,5 +5,6 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdint.h>
 
 #endif
