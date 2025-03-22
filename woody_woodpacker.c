@@ -94,13 +94,18 @@ bool    load_program_header(int stream) {
         perror("malloc");
         return false;
     }
-    lseek(stream, 0x20, SEEK_SET);
-    if (read(stream, offset_phdr, 8) != 8)
+    int offset = lseek(stream, 0x20, SEEK_SET);
+    if (offset == (off_t)-1) {
+        perror("Error seeking in file");
+        return 1;
+    }
+    if (read(stream, offset_phdr, 8) < 0)
     {
+	printf("%i\n", stream);
         perror("read");
         return false;
     }
-    printf("octets offset : %s\n", offset_phdr);
+    printf("octets offset : %i\n", offset_phdr[0]);
     return true;
 }
 
@@ -122,7 +127,7 @@ int main(int ac, char **av)
     }
     if (is_elf(stream_input))
     {
-        if ((stream_output = open("./woody", O_CREAT | O_WRONLY, 0755)) == -1)
+        if ((stream_output = open("./woody", O_CREAT | O_RDWR, 0755)) == -1)
         {
             printf("Error: could not open woody\n");
             perror("open");
@@ -136,9 +141,16 @@ int main(int ac, char **av)
         printf("Error: %s is not an ELF file\n", av[1]);
         return 1;
     }
-    close(stream_input);
-    // ajouter le segment a la fin
-    write_woody(stream_output);
+//     ajouter le segment a la fin
+   write_woody(stream_output);
+
+    int len = 0;
+
+    get_len_file(stream_output, &len);
+    printf("out : %i\n", len);
+    len = 0;
+    get_len_file(stream_input, &len);
+    printf("in : %i\n", len);
 
     load_program_header(stream_output);
 
@@ -154,6 +166,7 @@ int main(int ac, char **av)
     // modifier le entrypoint pour pointer sur le segment qu'on ajoute
 
 
+    close(stream_input);
     close(stream_output);
     return 0;
 }
