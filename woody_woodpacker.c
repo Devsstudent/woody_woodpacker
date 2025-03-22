@@ -10,6 +10,7 @@ bool is_elf(int stream_input)
         perror("read");
         return false;
     }
+    //Checker aussi que ce soit bien du elf 64 bits
     lseek(stream_input, 0, SEEK_SET);
     return magic[0] == 0x7f && magic[1] == 'E' && magic[2] == 'L' && magic[3] == 'F';
 }
@@ -58,6 +59,51 @@ bool copy_data(int stream_input, int stream_output)
     return true;
 }
 
+bool    get_len_file(int stream, int *len) {
+
+    lseek(stream, 0, SEEK_SET);
+    char buffer[4096];
+    int bytes_read;
+
+
+    while ((bytes_read = read(stream, buffer, 4096)) > 0)
+    {
+        *len += bytes_read;
+    }
+    if (bytes_read == -1)
+    {
+        perror("read");
+        return false;
+    }
+    return true;
+}
+
+bool    replace_value(int stream, int value, int offset) {
+    lseek(stream, offset, SEEK_SET);
+    write(stream, &value, sizeof(value));
+    return true;
+}
+
+bool    load_program_header(int stream) { 
+    Elf64_Phdr *program_header;
+    char offset_phdr[8];
+
+    program_header = malloc(sizeof(Elf64_Phdr));
+    if (program_header == NULL)
+    {
+        perror("malloc");
+        return false;
+    }
+    lseek(stream, 0x20, SEEK_SET);
+    if (read(stream, offset_phdr, 8) != 8)
+    {
+        perror("read");
+        return false;
+    }
+    printf("octets offset : %s\n", offset_phdr);
+    return true;
+}
+
 int main(int ac, char **av)
 {
     int stream_input;
@@ -91,14 +137,23 @@ int main(int ac, char **av)
         return 1;
     }
     close(stream_input);
+    // ajouter le segment a la fin
     write_woody(stream_output);
 
-    // function qui compte le nombre d'octet du fichier -> pour remplacer la valeur dans le header
-    // function qui remplace la valeur dans le header
-    // modifier le entrypoint pour pointer sur le segment qu'on ajoute
-    // ajouter le segment a la fin
+    load_program_header(stream_output);
+
     // inserer un nouveau programme header
+
+
     // modifier le nomber de programme header
+
+    // function qui compte le nombre d'octet du fichier -> pour remplacer la valeur dans le header
+
+    // function qui remplace la valeur dans le header
+
+    // modifier le entrypoint pour pointer sur le segment qu'on ajoute
+
+
     close(stream_output);
     return 0;
 }
