@@ -80,7 +80,11 @@ bool    get_len_file(int stream, int *len) {
 }
 
 bool    replace_value(int stream, int value, int offset) {
-    lseek(stream, offset, SEEK_SET);
+    int err = lseek(stream, offset, SEEK_SET);
+    if (err == (off_t)-1) {
+        perror("Error seeking in file");
+        return false;
+    }
     write(stream, &value, sizeof(value));
     return true;
 }
@@ -107,46 +111,39 @@ int convert_data_to_int(char *data, int bytes) {
     return value;
 }
 
-bool    get_offset_insert_header(int stream, int *offset_new_phdr) { 
-    Elf64_Phdr *program_header;
+bool    get_phoff(int stream, int *phoff) {
     char data[8];
-
     if (!load_info(stream, 32, 8, &data))
     {
         return false;
     }
-    int offset_phdr = convert_data_to_int(data, 8);
+    *phoff = convert_data_to_int(data, 8);
+    return true;
+}
 
+bool    get_phnum(int stream, int *phnum) {
+    char data[8];
     if (!load_info(stream, 56, 2, &data))
     {
         return false;
     }
-    int phnum = convert_data_to_int(data, 2);
+    *phnum = convert_data_to_int(data, 2);
+    return true;
+}
 
+bool    get_phentsize(int stream, int *phentsize) {
+    char data[8];
     if (!load_info(stream, 54, 2, &data))
     {
         return false;
     }
-    int phentsize = convert_data_to_int(data, 2);
+    *phentsize = convert_data_to_int(data, 2);
+    return true;
+}
 
-    //ecrire a offset + (e_phnum * e_phentsize) le nouveau header
-    *offset_new_phdr = offset_phdr + (phnum * phentsize);
-    /*
-    program_header = malloc(sizeof(Elf64_Phdr));
-    if (program_header == NULL)
-    {
-        perror("malloc");
-        return false;
-    }
-    int err = lseek(stream, offset, SEEK_SET);
-    if (err == (off_t)-1) {
-        perror("Error seeking in file");
-        return false;
-    }
-    if (!load_info(stream, offset, sizeof(Elf64_Phdr), (char **)&program_header))
-    {
-        return false;
-    }*/
+// function useless
+bool    get_info_ph_header(int stream, int *offset_new_phdr, int phoff, int phum, int phentsize) { 
+    offset_new_phdr = phoff + (phnum * phentsize);
     return true;
 }
 
@@ -177,6 +174,59 @@ bool    write_data(int stream, int len, char *data) {
         perror("write");
         return false;
     }
+    return true;
+}
+
+bool    modify_entrypoints_ph_headers(int stream, int size_new_phdr /* should be always sizeof(elf64_phdr)*/, int phoff, int phnum) {
+    int i = 0;
+    while (i < phnum) {
+        // load info a offset
+        char data[8];
+        int offset = phoff + (i * sizeof(Elf64_Phdr)) + 4;
+        if (!load_info(stream, offset, 8, &data))
+        {
+            return false;
+        }
+        int entrypoint = convert_data_to_int(data, 8);
+
+        if (!replace_value(stream, entrypoint + size_new_phdr, offset)) {
+            return false;
+        }
+        i++;
+    }
+    return true;
+}
+
+bool    insert_new_phdr(int stream) {
+    int phoff = 0;
+    if (!get_phoff(stream, &phoff)) {
+        return false;
+    }
+    int phnum = 0;
+    if (!get_phnum(stream, &phnum)) {
+        return false;
+    }
+    int phentsize = 0;
+    if (!get_phentsize(stream, &phentsize)) {
+        return false;
+    }
+    int offset_new_phdr = phoff + (phnum * phentsize);
+    Elf64_Phdr *program_header;
+    if (!create_program_header(&program_header, len1, dif)) {
+        printf("Error: could not create program header\n");
+        return 1;
+    };
+
+    if (!modify_entrypoints_ph_headers(stream, sizeof(Elf64_Phdr), phoff, phnum)) {
+        printf("Error: could not modify entrypoints\n");
+        return 1;
+    };
+
+    // Read les infos des headers, pour modifier la valeur de l'entrypoint offset
+    if (!insert_data(stream, offset_new_phdr, sizeof(Elf64_Phdr), (char *)program_header)) {
+        printf("Error: could not insert program header\n");
+        return 1;
+    };
     return true;
 }
 
@@ -284,26 +334,13 @@ int main(int ac, char **av)
     };
     int dif = len2 - len1;
 
+    if (!insert_new_phdr(stream_output)) {
+        printf("Error: could not insert new program header\n");
+        close(stream_input);
+        close(stream_output);
+        return 1;
+    };
 
-    int offset_new_phdr = 0;
-    if (!get_offset_insert_header(stream_output, &offset_new_phdr)) {
-        close(stream_input);
-        close(stream_output);
-        return 1;
-    };
-    Elf64_Phdr *program_header;
-    if (!create_program_header(&program_header, len1, dif)) {
-        printf("Error: could not create program header\n");
-        close(stream_input);
-        close(stream_output);
-        return 1;
-    };
-    if (!insert_data(stream_output, offset_new_phdr, sizeof(Elf64_Phdr), (char *)program_header)) {
-        printf("Error: could not insert program header\n");
-        close(stream_input);
-        close(stream_output);
-        return 1;
-    };
     if (!increment_program_header(stream_output)) {
         printf("Error: could not increment program header\n");
         close(stream_input);
