@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <elf.h>
 
+#include <inttypes.h>
 
 /*
 typedef uint64_t	Elf64_Addr;

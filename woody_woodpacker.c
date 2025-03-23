@@ -103,10 +103,19 @@ bool load_info(int stream, unsigned int offset, int len, char (*info)[8]) {
     return true;
 }
 
-int convert_data_to_int(char *data, int bytes) {
-    int value = 0;
+uint64_t convert_data_to_int(char *data, int bytes) {
+    uint64_t value = 0;
     for (int i = 0; i < bytes; i++) {
-        value |= ((uint64_t)data[i] << (i * 8));
+        value |= ((uint64_t)(unsigned char)data[i] << (i * 8));
+    }
+    return value;
+}
+
+uint64_t convert_data_to_int_big_endian(char *data, int bytes) {
+    uint64_t value = 0;
+    for (int i = 0; i < bytes; i++) {
+        // For big-endian, the first byte is the most significant
+        value |= ((uint64_t)(unsigned char)data[i] << ((bytes - 1 - i) * 8));
     }
     return value;
 }
@@ -176,13 +185,17 @@ bool    modify_entrypoints_ph_headers(int stream, int size_new_phdr /* should be
     while (i < phnum) {
         // load info a offset
         char data[8];
-        int offset = phoff + (i * sizeof(Elf64_Phdr)) + 4;
+        int offset = phoff + (i * sizeof(Elf64_Phdr)) + 8;
         if (!load_info(stream, offset, 8, &data))
         {
             return false;
         }
-        int entrypoint = convert_data_to_int(data, 8);
-        printf("entrypoint: %d, size_new_ph %d\n", entrypoint, size_new_phdr);
+        uint64_t entrypoint = convert_data_to_int(data, 8);
+	for (int i = 0; i < 8; i++) {
+        	printf("%02X ", (unsigned char)(data)[i]);
+    	}
+	    printf("\n");
+        printf("entrypoint: %llu, size_new_ph %d base %i offset %i\n", entrypoint, size_new_phdr, data[0], offset);
 
         if (!replace_value(stream, entrypoint + size_new_phdr, offset)) {
             return false;
@@ -280,6 +293,11 @@ bool increment_program_header(int stream) {
     return true;
 }
 
+
+// ELFDATA2LSB little endian
+//
+// should check for lsb or msb big endian 
+// and set a flag for converting data
 int main(int ac, char **av)
 {
     int stream_input;
