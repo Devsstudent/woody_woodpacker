@@ -29,6 +29,8 @@ bool    write_woody(int stream_output) {
         0x57, 0x6f, 0x6f, 0x64, 0x79  // "Woody" in ASCII
     };
 
+    // Ajouter le jump sur l'entrypoint de base dans le shellcode.
+
     // Write shellcode to file
     int res = write(stream_output, shellcode, sizeof(shellcode));
     if (res <= 0) {
@@ -65,7 +67,6 @@ bool    get_len_file(int stream, int *len) {
     char buffer[4096];
     int bytes_read;
 
-
     while ((bytes_read = read(stream, buffer, 4096)) > 0)
     {
         *len += bytes_read;
@@ -84,30 +85,71 @@ bool    replace_value(int stream, int value, int offset) {
     return true;
 }
 
-bool    load_program_header(int stream) { 
-    Elf64_Phdr *program_header;
-    char offset_phdr[8];
+bool load_info(int stream, unsigned int offset, int len, char **info) {
+    int err = lseek(stream, offset, SEEK_SET);
+    if (err == (off_t)-1) {
+        perror("Error seeking in file");
+        return false;
+    }
+    if (read(stream, *info, len) < 0)
+    {
+        perror("read");
+        return false;
+    }
+    return true;
+}
 
+int convert_data_to_int(char *data, int bytes) {
+    int value = 0;
+    for (int i = 0; i < bytes; i++) {
+        value |= ((uint64_t)data[i] << (i * 8));
+    }
+    return value;
+}
+
+bool    get_offset_insert_header(int stream, int *offset_new_phdr) { 
+    Elf64_Phdr *program_header;
+    char data[8];
+
+    if (!load_info(stream, 32, 8, &data))
+    {
+        return false;
+    }
+    int offset_phdr = convert_data_to_int(data, 8);
+
+    if (!load_info(stream, 56, 2, &data))
+    {
+        return false;
+    }
+    int phnum = convert_data_to_int(data, 2);
+
+    if (!load_info(stream, 54, 2, &data))
+    {
+        return false;
+    }
+    int phentsize = convert_data_to_int(data, 2);
+
+    //ecrire a offset + (e_phnum * e_phentsize) le nouveau header
+    *offset_new_phdr = offset_phdr + (phnum * phentsize);
+    /*
     program_header = malloc(sizeof(Elf64_Phdr));
     if (program_header == NULL)
     {
         perror("malloc");
         return false;
     }
-    int offset = lseek(stream, 0x20, SEEK_SET);
-    if (offset == (off_t)-1) {
+    int err = lseek(stream, offset, SEEK_SET);
+    if (err == (off_t)-1) {
         perror("Error seeking in file");
-        return 1;
-    }
-    if (read(stream, offset_phdr, 8) < 0)
-    {
-	printf("%i\n", stream);
-        perror("read");
         return false;
     }
-    printf("octets offset : %i\n", offset_phdr[0]);
+    if (!load_info(stream, offset, sizeof(Elf64_Phdr), (char **)&program_header))
+    {
+        return false;
+    }*/
     return true;
 }
+
 
 int main(int ac, char **av)
 {
@@ -142,28 +184,34 @@ int main(int ac, char **av)
         return 1;
     }
 //     ajouter le segment a la fin
-   write_woody(stream_output);
+    write_woody(stream_output);
 
-    int len = 0;
+    int offset_new_phdr = 0;
+    if (!get_offset_insert_header(stream_output, &offset_new_phdr)) {
+        close(stream_input);
+        close(stream_output);
+        return 1;
+    };
 
-    get_len_file(stream_output, &len);
-    printf("out : %i\n", len);
-    len = 0;
-    get_len_file(stream_input, &len);
-    printf("in : %i\n", len);
-
-    load_program_header(stream_output);
+    // cree le nouveau programme header, qui pointe sur le segement ajouter a la fin
+    // faut store l'offset
 
     // inserer un nouveau programme header
+
+    // Copier toutes les data d'apres pour les reecrirr apres
 
 
     // modifier le nomber de programme header
 
     // function qui compte le nombre d'octet du fichier -> pour remplacer la valeur dans le header
 
+    //reecrire apres
+
     // function qui remplace la valeur dans le header
+    //reecrire apres
 
     // modifier le entrypoint pour pointer sur le segment qu'on ajoute
+    //reecrire apres
 
 
     close(stream_input);
