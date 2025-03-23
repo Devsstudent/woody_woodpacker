@@ -182,6 +182,7 @@ bool    modify_entrypoints_ph_headers(int stream, int size_new_phdr /* should be
             return false;
         }
         int entrypoint = convert_data_to_int(data, 8);
+        printf("entrypoint: %d, size_new_ph %d\n", entrypoint, size_new_phdr);
 
         if (!replace_value(stream, entrypoint + size_new_phdr, offset)) {
             return false;
