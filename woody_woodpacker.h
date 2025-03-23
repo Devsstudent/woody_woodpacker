@@ -39,4 +39,8 @@ typedef struct {
         Elf64_Half      e_shstrndx; 2 / 62
 } Elf64_Ehdr; / 64
 */
+
+
+bool    create_program_header(Elf64_Phdr **program_header, int offset, int len);
+bool    insert_data(int stream, int offset, int len, char *data);
 #endif

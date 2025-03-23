@@ -141,12 +141,6 @@ bool    get_phentsize(int stream, int *phentsize) {
     return true;
 }
 
-// function useless
-bool    get_info_ph_header(int stream, int *offset_new_phdr, int phoff, int phum, int phentsize) { 
-    offset_new_phdr = phoff + (phnum * phentsize);
-    return true;
-}
-
 // allocate in the fonction
 bool store_data(int stream, int offset, int len, char **data) {
     int err = lseek(stream, offset, SEEK_SET);
@@ -197,7 +191,7 @@ bool    modify_entrypoints_ph_headers(int stream, int size_new_phdr /* should be
     return true;
 }
 
-bool    insert_new_phdr(int stream) {
+bool    insert_new_phdr(int stream, size_t original_len, size_t added_bytes) {
     int phoff = 0;
     if (!get_phoff(stream, &phoff)) {
         return false;
@@ -212,7 +206,7 @@ bool    insert_new_phdr(int stream) {
     }
     int offset_new_phdr = phoff + (phnum * phentsize);
     Elf64_Phdr *program_header;
-    if (!create_program_header(&program_header, len1, dif)) {
+    if (!create_program_header(&program_header, original_len, added_bytes)) {
         printf("Error: could not create program header\n");
         return 1;
     };
@@ -334,7 +328,7 @@ int main(int ac, char **av)
     };
     int dif = len2 - len1;
 
-    if (!insert_new_phdr(stream_output)) {
+    if (!insert_new_phdr(stream_output, len1, dif)) {
         printf("Error: could not insert new program header\n");
         close(stream_input);
         close(stream_output);
