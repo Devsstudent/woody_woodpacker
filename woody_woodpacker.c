@@ -221,6 +221,20 @@ bool    create_program_header(Elf64_Phdr **program_header, int offset, int len) 
     return true;
 }
 
+bool increment_program_header(int stream) {
+    char data[2];
+    if (!load_info(stream, 56, 2, &data))
+    {
+        return false;
+    }
+    int phnum = convert_data_to_int(data, 2);
+    phnum++;
+    if (!replace_value(stream, phnum, 56)) {
+        return false;
+    }
+    return true;
+}
+
 int main(int ac, char **av)
 {
     int stream_input;
@@ -290,6 +304,13 @@ int main(int ac, char **av)
         close(stream_output);
         return 1;
     };
+    if (!increment_program_header(stream_output)) {
+        printf("Error: could not increment program header\n");
+        close(stream_input);
+        close(stream_output);
+        return 1;
+    };
+
 
     // cree le nouveau programme header, qui pointe sur le segement ajouter a la fin
 
@@ -301,6 +322,7 @@ int main(int ac, char **av)
 
 
     // modifier le nomber de programme header
+
 
     // function qui compte le nombre d'octet du fichier -> pour remplacer la valeur dans le header
 
