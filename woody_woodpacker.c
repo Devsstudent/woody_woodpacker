@@ -85,7 +85,7 @@ bool    replace_value(int stream, int value, int offset) {
     return true;
 }
 
-bool load_info(int stream, unsigned int offset, int len, char **info) {
+bool load_info(int stream, unsigned int offset, int len, char (*info)[8]) {
     int err = lseek(stream, offset, SEEK_SET);
     if (err == (off_t)-1) {
         perror("Error seeking in file");
@@ -150,6 +150,25 @@ bool    get_offset_insert_header(int stream, int *offset_new_phdr) {
     return true;
 }
 
+bool    create_program_header(Elf64_Phdr **program_header, int offset, int len) {
+    *program_header = malloc(sizeof(Elf64_Phdr));
+    if (*program_header == NULL)
+    {
+        perror("malloc");
+        return false;
+    }
+    Elf64_Phdr *pg_hdr = *program_header;
+    pg_hdr->p_type = PT_LOAD;
+    pg_hdr->p_flags = PF_R | PF_X;
+    pg_hdr->p_offset = offset;
+    pg_hdr->p_vaddr = 0x0000000000020018;
+    pg_hdr->p_align = 0x10000;
+    pg_hdr->p_paddr = 0x0;
+    pg_hdr->p_filesz = len;
+    pg_hdr->p_memsz = len;
+
+    return true;
+}
 
 int main(int ac, char **av)
 {
@@ -186,14 +205,36 @@ int main(int ac, char **av)
 //     ajouter le segment a la fin
     write_woody(stream_output);
 
+    int len1 = 0;
+    if (!get_len_file(stream_input, &len1)) {
+        close(stream_input);
+        close(stream_output);
+        return 1;
+    };
+    int len2 = 0;
+    if (!get_len_file(stream_output, &len2)) {
+        close(stream_input);
+        close(stream_output);
+        return 1;
+    };
+    int dif = len2 - len1;
+
+
     int offset_new_phdr = 0;
     if (!get_offset_insert_header(stream_output, &offset_new_phdr)) {
         close(stream_input);
         close(stream_output);
         return 1;
     };
+    Elf64_Phdr *program_header;
+    if (!create_program_header(&program_header, len1, dif)) {
+        close(stream_input);
+        close(stream_output);
+        return 1;
+    };
 
     // cree le nouveau programme header, qui pointe sur le segement ajouter a la fin
+
     // faut store l'offset
 
     // inserer un nouveau programme header

@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <elf.h>
 
 typedef uint64_t	Elf64_Addr;
 typedef uint16_t	Elf64_Half;
