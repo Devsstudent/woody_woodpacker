@@ -228,6 +228,7 @@ int main(int ac, char **av)
     };
     Elf64_Phdr *program_header;
     if (!create_program_header(&program_header, len1, dif)) {
+        printf("Error: could not create program header\n");
         close(stream_input);
         close(stream_output);
         return 1;
