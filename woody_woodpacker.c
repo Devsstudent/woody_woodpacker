@@ -222,7 +222,7 @@ bool    create_program_header(Elf64_Phdr **program_header, int offset, int len) 
 }
 
 bool increment_program_header(int stream) {
-    char data[2];
+    char data[8];
     if (!load_info(stream, 56, 2, &data))
     {
         return false;
