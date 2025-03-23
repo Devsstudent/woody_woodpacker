@@ -150,6 +150,57 @@ bool    get_offset_insert_header(int stream, int *offset_new_phdr) {
     return true;
 }
 
+// allocate in the fonction
+bool store_data(int stream, int offset, int len, char **data) {
+    int err = lseek(stream, offset, SEEK_SET);
+    if (err == (off_t)-1) {
+        perror("Error seeking in file");
+        return false;
+    }
+    *data = malloc(len);
+    if (*data == NULL)
+    {
+        perror("malloc");
+        return false;
+    }
+    if (read(stream, *data, len) < 0)
+    {
+        perror("read");
+        return false;
+    }
+    return true;
+}
+
+bool    write_data(int stream, int len, char *data) {
+    if (write(stream, data, len) < 0)
+    {
+        perror("write");
+        return false;
+    }
+    return true;
+}
+
+bool    insert_data(int stream, int offset, int len, char *data) {
+    char *previous_data;
+    if (!store_data(stream, offset, len, &previous_data)) {
+        return false;
+    }
+    int err = lseek(stream, offset, SEEK_SET);
+    if (err == (off_t)-1) {
+        perror("Error seeking in file");
+        return false;
+    }
+    if (write(stream, data, len) < 0)
+    {
+        perror("write");
+        return false;
+    }
+    if (!write_data(stream, len, previous_data)) {
+        return false;
+    }
+    return true;
+}
+
 bool    create_program_header(Elf64_Phdr **program_header, int offset, int len) {
     *program_header = malloc(sizeof(Elf64_Phdr));
     if (*program_header == NULL)
@@ -229,6 +280,12 @@ int main(int ac, char **av)
     Elf64_Phdr *program_header;
     if (!create_program_header(&program_header, len1, dif)) {
         printf("Error: could not create program header\n");
+        close(stream_input);
+        close(stream_output);
+        return 1;
+    };
+    if (!insert_data(stream_output, offset_new_phdr, sizeof(Elf64_Phdr), (char *)program_header)) {
+        printf("Error: could not insert program header\n");
         close(stream_input);
         close(stream_output);
         return 1;
