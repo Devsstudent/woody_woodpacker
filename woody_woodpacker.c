@@ -214,7 +214,7 @@ bool    create_program_header(Elf64_Phdr **program_header, int offset, int len) 
     pg_hdr->p_offset = offset;
     pg_hdr->p_vaddr = 0x0000000000020018;
     pg_hdr->p_align = 0x10000;
-    pg_hdr->p_paddr = 0x0;
+    pg_hdr->p_paddr = 0x0000000000020018;
     pg_hdr->p_filesz = len;
     pg_hdr->p_memsz = len;
 
