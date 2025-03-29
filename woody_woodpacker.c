@@ -234,7 +234,7 @@ bool    modify_entrypoints_section_headers(int stream, int size_new_phdr /* shou
         // load info a offset
         char data[8];
         // + 8 pour recuper la valeur de l'entrypoint
-        int offset = phoff + (i * sizeof(Elf64_Shdr)) + 24;
+        int offset = shoff + (i * sizeof(Elf64_Shdr)) + 24;
         if (!load_info(stream, offset, 8, &data))
         {
             return false;
