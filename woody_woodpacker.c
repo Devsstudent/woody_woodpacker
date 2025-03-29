@@ -283,17 +283,16 @@ bool    insert_new_phdr(int stream, size_t original_len, size_t added_bytes) {
         return 1;
     };
 
-    // Modify the section header offset in the ELF header
-    if (!replace_value(stream, shoff + sizeof(Elf64_Phdr), 40)) {
-        printf("Error: could not update section header offset\n");
-        return 1;
-    }
 
     if (!insert_data(stream, offset_new_phdr, sizeof(Elf64_Phdr), (char *)program_header)) {
         printf("Error: could not insert program header\n");
         return 1;
     };
-
+    // Modify the section header offset in the ELF header
+    if (!replace_value(stream, shoff + sizeof(Elf64_Phdr), 40)) {
+        printf("Error: could not update section header offset\n");
+        return 1;
+    }
     // Modify section header table entries
     if (!modify_entrypoints_section_headers(stream, sizeof(Elf64_Phdr), shoff + sizeof(Elf64_Phdr), shnum)) {
         printf("Error: could not modify section header entrypoints\n");
