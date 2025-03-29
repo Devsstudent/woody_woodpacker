@@ -200,6 +200,13 @@ bool    write_data(int stream, int len, char *data) {
     return true;
 }
 
+alignOffset(offset, alignment uint64) uint64 {
+	if offset%alignment != 0 {
+		return offset + (alignment - (offset % alignment))
+	}
+	return offset
+}
+
 bool    modify_entrypoints_ph_headers(int stream, int size_new_phdr /* should be always sizeof(elf64_phdr)*/, int phoff, int phnum) {
     int i = 0;
     while (i < phnum) {
@@ -234,7 +241,7 @@ bool    modify_entrypoints_section_headers(int stream, int size_new_phdr /* shou
         // load info a offset
         char data[8];
         // + 8 pour recuper la valeur de l'entrypoint
-        int offset = phoff + (i * sizeof(Elf64_shdr)) + 32;
+        int offset = phoff + (i * sizeof(Elf64_shdr)) + 24;
         if (!load_info(stream, offset, 8, &data))
         {
             return false;
@@ -283,9 +290,15 @@ bool    insert_new_phdr(int stream, size_t original_len, size_t added_bytes) {
         return 1;
     };
 
-    // modify section header table
-    if (!modify_entrypoints_section_headers(stream, sizeof(Elf64_Shdr), shoff, shnum)) {
-        printf("Error: could not modify entrypoints\n");
+    // Modify the section header offset in the ELF header
+    if (!replace_value(stream, shoff + sizeof(Elf64_Phdr), 40)) {
+        printf("Error: could not update section header offset\n");
+        return 1;
+    }
+
+    // Modify section header table entries
+    if (!modify_entrypoints_section_headers(stream, sizeof(Elf64_Phdr), shoff + sizeof(Elf64_Phdr), shnum)) {
+        printf("Error: could not modify section header entrypoints\n");
         return 1;
     };
 
