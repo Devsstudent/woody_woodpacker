@@ -120,6 +120,26 @@ uint64_t convert_data_to_int_big_endian(char *data, int bytes) {
     return value;
 }
 
+bool get_shoff(int stream, int *shoff) {
+    char data[8];
+    if (!load_info(stream, 40, 8, &data))
+    {
+        return false;
+    }
+    *shoff = convert_data_to_int(data, 8);
+    return true;
+}
+
+bool get_shnum(int stream, int *shnum) {
+    char data[8];
+    if (!load_info(stream, 60, 2, &data))
+    {
+        return false;
+    }
+    *shnum = convert_data_to_int(data, 2);
+    return true;
+}
+
 bool    get_phoff(int stream, int *phoff) {
     char data[8];
     if (!load_info(stream, 32, 8, &data))
@@ -185,17 +205,42 @@ bool    modify_entrypoints_ph_headers(int stream, int size_new_phdr /* should be
     while (i < phnum) {
         // load info a offset
         char data[8];
+        // + 8 pour recuper la valeur de l'entrypoint
         int offset = phoff + (i * sizeof(Elf64_Phdr)) + 8;
         if (!load_info(stream, offset, 8, &data))
         {
             return false;
         }
         uint64_t entrypoint = convert_data_to_int(data, 8);
-	for (int i = 0; i < 8; i++) {
+	    for (int i = 0; i < 8; i++) {
         	printf("%02X ", (unsigned char)(data)[i]);
     	}
 	    printf("\n");
         printf("entrypoint: %llu, size_new_ph %d base %i offset %i\n", entrypoint, size_new_phdr, data[0], offset);
+
+        if (!replace_value(stream, entrypoint + size_new_phdr, offset)) {
+            return false;
+        }
+        i++;
+    }
+    return true;
+}
+
+bool    modify_entrypoints_section_headers(int stream, int size_new_phdr /* should be always sizeof(elf64_phdr)*/, int shoff, int shnum) {
+    int i = 0;
+
+    // charger a + 32 pour modifier l'offset du debut de la section en raw
+    while (i < shnum) {
+        // load info a offset
+        char data[8];
+        // + 8 pour recuper la valeur de l'entrypoint
+        int offset = phoff + (i * sizeof(Elf64_shdr)) + 32;
+        if (!load_info(stream, offset, 8, &data))
+        {
+            return false;
+        }
+        uint64_t entrypoint = convert_data_to_int(data, 8);
+        printf("entrypoint: %llu\n", entrypoint);
 
         if (!replace_value(stream, entrypoint + size_new_phdr, offset)) {
             return false;
@@ -214,6 +259,14 @@ bool    insert_new_phdr(int stream, size_t original_len, size_t added_bytes) {
     if (!get_phnum(stream, &phnum)) {
         return false;
     }
+    int shoff = 0;
+    if (!get_shoff(stream, &shoff)) {
+        return false;
+    }
+    int shnum = 0;
+    if (!get_shnum(stream, &shnum)) {
+        return false;
+    }
     int phentsize = 0;
     if (!get_phentsize(stream, &phentsize)) {
         return false;
@@ -226,6 +279,12 @@ bool    insert_new_phdr(int stream, size_t original_len, size_t added_bytes) {
     };
 
     if (!modify_entrypoints_ph_headers(stream, sizeof(Elf64_Phdr), phoff, phnum)) {
+        printf("Error: could not modify entrypoints\n");
+        return 1;
+    };
+
+    // modify section header table
+    if (!modify_entrypoints_section_headers(stream, sizeof(Elf64_Shdr), shoff, shnum)) {
         printf("Error: could not modify entrypoints\n");
         return 1;
     };
