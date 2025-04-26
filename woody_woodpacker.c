@@ -79,13 +79,13 @@ bool    get_len_file(int stream, int *len) {
     return true;
 }
 
-bool    replace_value(int stream, int value, int offset) {
+bool    replace_value(int stream, uint16_t value, int offset, int bytes_to_write) {
     int err = lseek(stream, offset, SEEK_SET);
     if (err == (off_t)-1) {
         perror("Error seeking in file");
         return false;
     }
-    write(stream, &value, sizeof(value));
+    write(stream, &value, bytes_to_write);
     return true;
 }
 
@@ -218,7 +218,7 @@ bool    modify_entrypoints_ph_headers(int stream, int size_new_phdr /* should be
 	    printf("\n");
         printf("entrypoint: %llu, size_new_ph %d base %i offset %i\n", entrypoint, size_new_phdr, data[0], offset);
 
-        if (!replace_value(stream, entrypoint + size_new_phdr, offset)) {
+        if (!replace_value(stream, entrypoint + size_new_phdr, offset, 8)) {
             return false;
         }
         i++;
@@ -240,9 +240,9 @@ bool    modify_entrypoints_section_headers(int stream, int size_new_phdr /* shou
             return false;
         }
         uint64_t entrypoint = convert_data_to_int(data, 8);
-        printf("entrypoint: %llu\n", entrypoint);
+        printf("entrypoint KEKW: %llu\n", entrypoint);
 
-        if (!replace_value(stream, entrypoint + size_new_phdr, offset)) {
+        if (!replace_value(stream, entrypoint + size_new_phdr, offset, 8)) {
             return false;
         }
         i++;
@@ -289,15 +289,15 @@ bool    insert_new_phdr(int stream, size_t original_len, size_t added_bytes) {
         return 1;
     };
     // Modify the section header offset in the ELF header
-    if (!replace_value(stream, shoff + sizeof(Elf64_Phdr), 40)) {
+    if (!replace_value(stream, shoff + sizeof(Elf64_Phdr), 40, 8)) {
         printf("Error: could not update section header offset\n");
         return 1;
     }
     // Modify section header table entries
-    if (!modify_entrypoints_section_headers(stream, sizeof(Elf64_Phdr), shoff + sizeof(Elf64_Phdr), shnum)) {
-        printf("Error: could not modify section header entrypoints\n");
-        return 1;
-    };
+ //   if (!modify_entrypoints_section_headers(stream, sizeof(Elf64_Phdr), shoff + sizeof(Elf64_Phdr), shnum)) {
+ //       printf("Error: could not modify section header entrypoints\n");
+ //       return 1;
+ //   };
 
     return true;
 }
@@ -349,9 +349,9 @@ bool increment_program_header(int stream) {
     {
         return false;
     }
-    int phnum = convert_data_to_int(data, 2);
+    uint16_t phnum = convert_data_to_int(data, 2);
     phnum++;
-    if (!replace_value(stream, phnum, 56)) {
+    if (!replace_value(stream, phnum, 56, 2)) {
         return false;
     }
     return true;
@@ -434,9 +434,7 @@ int main(int ac, char **av)
 
     // Copier toutes les data d'apres pour les reecrirr apres
 
-
     // modifier le nomber de programme header
-
 
     // function qui compte le nombre d'octet du fichier -> pour remplacer la valeur dans le header
 
