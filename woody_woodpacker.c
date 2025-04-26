@@ -200,6 +200,34 @@ bool    write_data(int stream, int len, char *data) {
     return true;
 }
 
+bool    modify_dynamic_section(int stream, int offset) {
+
+    // load the offset of the dynamic section
+    // load the size of the dynamic section
+    char data[8];
+    // p_offset
+    if (!load_info(stream, offset + 8, 8, &data))
+    {
+        return false;
+    }
+    uint64_t dyn_offset = convert_data_to_int(data, 8);
+    bzero(data, 8);
+    if (!load_info(stream, offset + 32, 8, &data))
+    {
+        return false;
+    }
+    uint64_t dyn_size = convert_data_to_int(data, 8);
+
+    Elf64_Dyn *dynamic_entries = (Elf64_Dyn *)(dyn_offset);
+
+        int dyn_count = dyn_size / sizeof(Elf64_Dyn);
+
+        for (int j = 0; j < dyn_count; j++) {
+            printf("Dynamic tag: %lx\n", dynamic_entries[j].d_tag);
+        }
+
+}
+
 bool    modify_entrypoints_ph_headers(int stream, int size_new_phdr /* should be always sizeof(elf64_phdr)*/, int phoff, int phnum) {
     int i = 0;
     while (i < phnum) {
@@ -229,6 +257,10 @@ bool    modify_entrypoints_ph_headers(int stream, int size_new_phdr /* should be
         }
         uint32_t type = convert_data_to_int(data, 4);
         printf("type: %u\n", type);
+        if (type == 2 /*PT_DYNAMIC*/) {
+            printf("found dynamic\n");
+            modify_dynamic_section(stream, offset - 8)
+        }
         i++;
     }
     printf("----\n");
