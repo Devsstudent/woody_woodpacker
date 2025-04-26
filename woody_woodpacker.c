@@ -228,9 +228,17 @@ bool    modify_dynamic_section(int stream, int offset) {
     }
     // read the array of dynamic section
     Elf64_Dyn *dyn = (Elf64_Dyn *)dyn_data;
-    for (int i = 0; i < dyn_count; i++)
-    {
-        printf("d_tag: %llu\n", dyn[i].d_tag);
+    for (int i = 0; i < dyn_count; i++) {
+        if (dyn[i].d_tag == DT_STRTAB || dyn[i].d_tag == DT_SYMTAB ||
+            dyn[i].d_tag == DT_JMPREL || dyn[i].d_tag == DT_INIT ||
+            dyn[i].d_tag == DT_FINI || dyn[i].d_tag == DT_REL || dyn[i].d_tag == DT_RELA) 
+        {
+//            if (dyn[i].d_un.d_ptr > inject_vaddr) {
+                printf("found %llu, tag type: %llu\n", dyn[i].d_un.d_ptr, dyn[i].d_tag);
+                // replace the value in the dynamic section
+                dyn[i].d_un.d_ptr += size_new_phdr;
+ //           }
+        }
     }
 }
 
