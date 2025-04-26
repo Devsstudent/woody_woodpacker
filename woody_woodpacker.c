@@ -79,7 +79,7 @@ bool    get_len_file(int stream, int *len) {
     return true;
 }
 
-bool    replace_value(int stream, uint16_t value, int offset, int bytes_to_write) {
+bool    replace_value(int stream, int value, int offset, int bytes_to_write) {
     int err = lseek(stream, offset, SEEK_SET);
     if (err == (off_t)-1) {
         perror("Error seeking in file");
