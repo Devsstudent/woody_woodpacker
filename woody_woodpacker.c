@@ -221,6 +221,14 @@ bool    modify_entrypoints_ph_headers(int stream, int size_new_phdr /* should be
         if (!replace_value(stream, entrypoint + size_new_phdr, offset, 8)) {
             return false;
         }
+
+        bzero(data, 8);
+        if (!load_info(stream, offset - 8, 4, &data))
+        {
+            return false;
+        }
+        uint32_t type = convert_data_to_int(data, 4);
+        printf("type: %u\n", type);
         i++;
     }
     printf("----\n");
