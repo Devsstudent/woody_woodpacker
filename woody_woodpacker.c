@@ -223,6 +223,7 @@ bool    modify_entrypoints_ph_headers(int stream, int size_new_phdr /* should be
         }
         i++;
     }
+    printf("----\n");
     return true;
 }
 
@@ -240,7 +241,11 @@ bool    modify_entrypoints_section_headers(int stream, int size_new_phdr /* shou
             return false;
         }
         uint64_t entrypoint = convert_data_to_int(data, 8);
-        printf("entrypoint KEKW: %llu\n", entrypoint);
+	    for (int i = 0; i < 8; i++) {
+        	printf("%02X ", (unsigned char)(data)[i]);
+    	}
+	    printf("\n");
+        printf("entrypoint KEKW: %llu idx : %i\n", entrypoint, i);
 
         if (!replace_value(stream, entrypoint + size_new_phdr, offset, 8)) {
             return false;
@@ -288,16 +293,17 @@ bool    insert_new_phdr(int stream, size_t original_len, size_t added_bytes) {
         printf("Error: could not insert program header\n");
         return 1;
     };
-    // Modify the section header offset in the ELF header
+    // Modify section header table entries
+    if (!modify_entrypoints_section_headers(stream, sizeof(Elf64_Phdr), shoff + sizeof(Elf64_Phdr), shnum)) {
+        printf("Error: could not modify section header entrypoints\n");
+        return 1;
+    }
+// Modify the section header offset in the ELF header
     if (!replace_value(stream, shoff + sizeof(Elf64_Phdr), 40, 8)) {
         printf("Error: could not update section header offset\n");
         return 1;
     }
-    // Modify section header table entries
-   // if (!modify_entrypoints_section_headers(stream, sizeof(Elf64_Phdr), shoff + sizeof(Elf64_Phdr), shnum)) {
-   //     printf("Error: could not modify section header entrypoints\n");
-   //     return 1;
-   // };
+    printf("shoff new: %llu\n", shoff + sizeof(Elf64_Phdr));
 
     return true;
 }
@@ -327,7 +333,7 @@ bool    insert_data(int stream, int offset, int len, char *data) {
         return false;
     }
     // a la suite reecrire la data que j'ai stocker avant
-    if (!write_data(stream, len, previous_data)) {
+    if (!write_data(stream, size_cpy, previous_data)) {
         return false;
     }
     return true;
