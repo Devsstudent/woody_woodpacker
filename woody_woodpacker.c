@@ -294,29 +294,39 @@ bool    insert_new_phdr(int stream, size_t original_len, size_t added_bytes) {
         return 1;
     }
     // Modify section header table entries
-    if (!modify_entrypoints_section_headers(stream, sizeof(Elf64_Phdr), shoff + sizeof(Elf64_Phdr), shnum)) {
-        printf("Error: could not modify section header entrypoints\n");
-        return 1;
-    };
+   // if (!modify_entrypoints_section_headers(stream, sizeof(Elf64_Phdr), shoff + sizeof(Elf64_Phdr), shnum)) {
+   //     printf("Error: could not modify section header entrypoints\n");
+   //     return 1;
+   // };
 
     return true;
 }
 
 bool    insert_data(int stream, int offset, int len, char *data) {
     char *previous_data;
-    if (!store_data(stream, offset, len, &previous_data)) {
+
+    int lenfile = 0;
+    if (!get_len_file(stream, &lenfile)) {
         return false;
     }
+    int size_cpy = lenfile - offset;
+    // Store the data justqu'a la fin du fichier
+    if (!store_data(stream, offset, size_cpy, &previous_data)) {
+        return false;
+    }
+    // Placer le curseur a l'endroit ou je veux ecrire
     int err = lseek(stream, offset, SEEK_SET);
     if (err == (off_t)-1) {
         perror("Error seeking in file");
         return false;
     }
+    // Ecrire la data
     if (write(stream, data, len) < 0)
     {
         perror("write");
         return false;
     }
+    // a la suite reecrire la data que j'ai stocker avant
     if (!write_data(stream, len, previous_data)) {
         return false;
     }

@@ -41,6 +41,33 @@ typedef struct {
 } Elf64_Ehdr; / 64
 */
 
+/*
+typedef struct elf64_phdr {
+    Elf64_Word p_type;
+    Elf64_Word p_flags;
+    Elf64_Off p_offset;
+    Elf64_Addr p_vaddr;
+    Elf64_Addr p_paddr;
+    Elf64_Xword p_filesz;
+    Elf64_Xword p_memsz;
+    Elf64_Xword p_align;
+} Elf64_Phdr;
+*/
+
+/*
+typedef struct elf64_shdr {
+    Elf64_Word sh_name; 4 / 0
+    Elf64_Word sh_type; 4 / 4
+    Elf64_Xword sh_flags; 8 / 8
+    Elf64_Addr sh_addr; 8 / 16
+    Elf64_Off sh_offset; 8 / 24
+    Elf64_Xword sh_size; 8 / 32
+    Elf64_Word sh_link; 4 / 40
+    Elf64_Word sh_info; 4 / 44
+    Elf64_Xword sh_addralign; 8 / 48
+    Elf64_Xword sh_entsize; 8 / 56
+} Elf64_Shdr;
+ */
 
 bool    create_program_header(Elf64_Phdr **program_header, int offset, int len);
 bool    insert_data(int stream, int offset, int len, char *data);
