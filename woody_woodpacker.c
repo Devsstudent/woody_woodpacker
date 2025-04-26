@@ -229,6 +229,7 @@ bool    modify_dynamic_section(int stream, int offset) {
     }
  // read the array of dynamic section
     Elf64_Dyn *dyn = (Elf64_Dyn *)dyn_data;
+    int counter = 0;
     for (int i = 0; i < dyn_count; i++) {
         if (dyn[i].d_tag == DT_STRTAB || dyn[i].d_tag == DT_SYMTAB ||
             dyn[i].d_tag == DT_JMPREL || dyn[i].d_tag == DT_INIT ||
@@ -238,8 +239,12 @@ bool    modify_dynamic_section(int stream, int offset) {
                 printf("found %llu, tag type: %llu\n", dyn[i].d_un.d_ptr, dyn[i].d_tag);
                 // replace the value in the dynamic section
                 dyn[i].d_un.d_ptr += 56;
+                if (!replace_value(stream, dyn[i].d_un.d_ptr + 56, dyn_offset + 8 + counter, 8)) {
+                    return false;
+                }
  //           }
         }
+        counter += sizeof(Elf64_Dyn);
     }}
 
 bool    modify_entrypoints_ph_headers(int stream, int size_new_phdr /* should be always sizeof(elf64_phdr)*/, int phoff, int phnum) {
