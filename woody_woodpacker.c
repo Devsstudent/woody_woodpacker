@@ -273,7 +273,7 @@ bool    modify_entrypoints_ph_headers(int stream, int size_new_phdr /* should be
         printf("type: %u\n", type);
         if (type == 2 /*PT_DYNAMIC*/) {
             printf("found dynamic\n");
-            modify_dynamic_section(stream, offset - 8)
+            modify_dynamic_section(stream, offset - 8);
         }
         i++;
     }
