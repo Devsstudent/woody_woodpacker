@@ -218,14 +218,20 @@ bool    modify_dynamic_section(int stream, int offset) {
     }
     uint64_t dyn_size = convert_data_to_int(data, 8);
 
-    Elf64_Dyn *dynamic_entries = (Elf64_Dyn *)(dyn_offset);
+    int dyn_count = dyn_size / sizeof(Elf64_Dyn);
 
-        int dyn_count = dyn_size / sizeof(Elf64_Dyn);
-
-        for (int j = 0; j < dyn_count; j++) {
-            printf("Dynamic tag: %lx\n", dynamic_entries[j].d_tag);
-        }
-
+    // load the dynamic section
+    char *dyn_data;
+    if (!store_data(stream, dyn_offset, dyn_size, &dyn_data))
+    {
+        return false;
+    }
+    // read the array of dynamic section
+    Elf64_Dyn *dyn = (Elf64_Dyn *)dyn_data;
+    for (int i = 0; i < dyn_count; i++)
+    {
+        printf("d_tag: %llu\n", dyn[i].d_tag);
+    }
 }
 
 bool    modify_entrypoints_ph_headers(int stream, int size_new_phdr /* should be always sizeof(elf64_phdr)*/, int phoff, int phnum) {
