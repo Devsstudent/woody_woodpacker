@@ -1,4 +1,5 @@
 #include "woody_woodpacker.h"
+#include <string.h>
 
 bool is_elf(int stream_input)
 {
@@ -226,7 +227,7 @@ bool    modify_dynamic_section(int stream, int offset) {
     {
         return false;
     }
-    // read the array of dynamic section
+ // read the array of dynamic section
     Elf64_Dyn *dyn = (Elf64_Dyn *)dyn_data;
     for (int i = 0; i < dyn_count; i++) {
         if (dyn[i].d_tag == DT_STRTAB || dyn[i].d_tag == DT_SYMTAB ||
@@ -236,11 +237,10 @@ bool    modify_dynamic_section(int stream, int offset) {
 //            if (dyn[i].d_un.d_ptr > inject_vaddr) {
                 printf("found %llu, tag type: %llu\n", dyn[i].d_un.d_ptr, dyn[i].d_tag);
                 // replace the value in the dynamic section
-                dyn[i].d_un.d_ptr += size_new_phdr;
+                dyn[i].d_un.d_ptr += 56;
  //           }
         }
-    }
-}
+    }}
 
 bool    modify_entrypoints_ph_headers(int stream, int size_new_phdr /* should be always sizeof(elf64_phdr)*/, int phoff, int phnum) {
     int i = 0;
