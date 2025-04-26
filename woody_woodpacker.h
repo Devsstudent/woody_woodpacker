@@ -43,14 +43,14 @@ typedef struct {
 
 /*
 typedef struct elf64_phdr {
-    Elf64_Word p_type;
-    Elf64_Word p_flags;
-    Elf64_Off p_offset;
-    Elf64_Addr p_vaddr;
-    Elf64_Addr p_paddr;
-    Elf64_Xword p_filesz;
-    Elf64_Xword p_memsz;
-    Elf64_Xword p_align;
+    Elf64_Word p_type; 4 / 0
+    Elf64_Word p_flags; 4 / 4
+    Elf64_Off p_offset; 8 / 8
+    Elf64_Addr p_vaddr; 8 / 16
+    Elf64_Addr p_paddr; 8 / 24
+    Elf64_Xword p_filesz; 8 / 32
+    Elf64_Xword p_memsz; 8 / 40
+    Elf64_Xword p_align; 8 / 48
 } Elf64_Phdr;
 */
 
