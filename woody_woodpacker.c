@@ -233,19 +233,19 @@ bool    modify_dynamic_section(int stream, int offset) {
     for (int i = 0; i < dyn_count; i++) {
         if (dyn[i].d_tag == DT_STRTAB || dyn[i].d_tag == DT_SYMTAB ||
             dyn[i].d_tag == DT_JMPREL || dyn[i].d_tag == DT_INIT ||
-            dyn[i].d_tag == DT_FINI || dyn[i].d_tag == DT_REL || dyn[i].d_tag == DT_RELA) 
+            dyn[i].d_tag == DT_FINI || dyn[i].d_tag == DT_REL || 
+            dyn[i].d_tag == DT_RELA || dyn[i].d_tag == DT_GNU_HASH ||
+            dyn[i].d_tag == DT_VERNEED || dyn[i].d_tag == DT_VERSYM) 
         {
-//            if (dyn[i].d_un.d_ptr > inject_vaddr) {
-                printf("found %llu, tag type: %llu\n", dyn[i].d_un.d_ptr, dyn[i].d_tag);
-                // replace the value in the dynamic section
-                dyn[i].d_un.d_ptr += 56;
-                if (!replace_value(stream, dyn[i].d_un.d_ptr + 56, dyn_offset + 8 + counter, 8)) {
-                    return false;
-                }
- //           }
+            printf("found %llu, tag type: %llu\n", dyn[i].d_un.d_ptr, dyn[i].d_tag);
+            // replace the value in the dynamic section
+            dyn[i].d_un.d_ptr += 56;
+            if (!replace_value(stream, dyn[i].d_un.d_ptr, dyn_offset + 8 + counter, 8)) {
+            return false;
+        }
         }
         counter += sizeof(Elf64_Dyn);
-    }}
+    } 
 
 bool    modify_entrypoints_ph_headers(int stream, int size_new_phdr /* should be always sizeof(elf64_phdr)*/, int phoff, int phnum) {
     int i = 0;
